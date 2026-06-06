@@ -1,468 +1,369 @@
 import Link from "next/link";
-import { appConfig } from "@/lib/config";
 
-const ACCENT = "#e06080";
+/* ────────────────────────────────────────────────────────────────────
+   AALTO — THE DESIGN STUDIO
+   Helsinki · Bauhaus / Scandinavian modernism. Big flat geometric
+   shapes, organic wave curves ("aalto" = wave), asymmetric Mondrian
+   bento. Bone (#f4f1ec), coral (#e06080) + mustard + deep teal.
+──────────────────────────────────────────────────────────────────── */
 
-const logEntries = [
-  {
-    t: "14:23",
-    body: "Detected hot service: user-profile-svc (latency p99: 840ms)",
-    tone: "warn",
-  },
-  {
-    t: "14:24",
-    body: "Proposing split: read-path / write-path",
-    tone: "info",
-  },
-  {
-    t: "14:24",
-    body: "Lodestar verifying parity... PROVEN",
-    tone: "ok",
-  },
-  {
-    t: "14:25",
-    body: "Axiom checking constraints... PASSED",
-    tone: "ok",
-  },
-  {
-    t: "14:26",
-    body: "Deploying with canary 5%...",
-    tone: "info",
-  },
-  {
-    t: "14:31",
-    body: "Promoting to 100%. p99: 290ms.",
-    tone: "ok",
-  },
-] as const;
+const BONE = "#f4f1ec";
+const INK = "#16140f";
+const CORAL = "#e06080";
+const MUSTARD = "#e8a93a";
+const TEAL = "#1f6f6a";
 
-function AaltoMark({ size = 22 }: { size?: number }) {
-  // Stacked waves
-  return (
-    <svg
-      viewBox="0 0 32 32"
-      width={size}
-      height={size}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-    >
-      <path d="M3 11 C 8 6, 14 16, 19 11 S 28 6, 29 11" />
-      <path d="M3 17 C 8 12, 14 22, 19 17 S 28 12, 29 17" opacity="0.7" />
-      <path d="M3 23 C 8 18, 14 28, 19 23 S 28 18, 29 23" opacity="0.4" />
-    </svg>
-  );
-}
+const SANS =
+  "'Helvetica Neue', 'Inter', 'Arial Nova', Helvetica, Arial, sans-serif";
+const MONO = "'SF Mono', 'JetBrains Mono', 'IBM Plex Mono', Menlo, monospace";
 
-function ServiceBox({
-  label,
-  rps,
-  status,
-}: {
-  label: string;
-  rps: string;
-  status: "hot" | "warm" | "cool" | "cache";
-}) {
-  const tone =
-    status === "hot"
-      ? { border: `${ACCENT}aa`, color: ACCENT, dot: ACCENT, sub: "p99 840ms" }
-      : status === "warm"
-      ? { border: `${ACCENT}55`, color: "#fff", dot: ACCENT, sub: "p99 320ms" }
-      : status === "cache"
-      ? { border: "rgba(255,255,255,0.25)", color: "#fff", dot: "#9ad", sub: "hit 86%" }
-      : { border: "rgba(255,255,255,0.18)", color: "#fff", dot: "#8c8", sub: "p99 290ms" };
-
-  return (
-    <div
-      className="rounded-md border bg-[#0d0d0d] px-3 py-3 min-w-[140px]"
-      style={{ borderColor: tone.border }}
-    >
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] uppercase tracking-wider text-white/70">
-          {label}
-        </span>
-        <span
-          className="h-1.5 w-1.5 rounded-full"
-          style={{ background: tone.dot }}
-        />
-      </div>
-      <div
-        className="mt-2 font-mono text-sm"
-        style={{ color: tone.color }}
-      >
-        {rps}
-      </div>
-      <div className="mt-1 font-mono text-[10px] text-white/40">
-        {tone.sub}
-      </div>
-    </div>
-  );
-}
+const log: [string, string][] = [
+  ["14:23", "hot service detected · user-profile (p99 840ms)"],
+  ["14:24", "proposing split: read / write"],
+  ["14:25", "Lodestar verifying parity… PROVEN"],
+  ["14:26", "Axiom constraints… PASSED"],
+  ["14:31", "promoted 100% · p99 290ms"],
+];
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-[#e06080]/30">
-      {/* Nav */}
-      <header className="border-b border-white/5">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-3" style={{ color: ACCENT }}>
-            <AaltoMark size={22} />
-            <div className="flex flex-col leading-tight">
-              <span
-                className="text-base"
-                style={{ fontFamily: "ui-serif, Georgia, 'Times New Roman', serif" }}
-              >
-                {appConfig.name}
-              </span>
-              <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-white/35">
-                aalto.fi &middot; Helsinki
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-6">
-            <span className="hidden sm:inline font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
-              Infrastructure layer
+    <div
+      className="min-h-screen overflow-x-hidden"
+      style={{ backgroundColor: BONE, color: INK, fontFamily: SANS }}
+    >
+      {/* ════════════════════ HERO — ASYMMETRIC + WAVE ════════════════════ */}
+      <section className="relative">
+        {/* The big organic coral WAVE sweeping across the top */}
+        <svg
+          className="absolute inset-x-0 top-0 h-[58vh] w-full"
+          viewBox="0 0 1440 760"
+          preserveAspectRatio="xMidYMin slice"
+          aria-hidden
+        >
+          <path
+            d="M0,300 C220,180 360,420 600,360 C880,290 1040,120 1440,260 L1440,0 L0,0 Z"
+            fill={CORAL}
+          />
+          <path
+            d="M0,300 C220,180 360,420 600,360 C880,290 1040,120 1440,260"
+            fill="none"
+            stroke={MUSTARD}
+            strokeWidth="6"
+          />
+          {/* a teal arc echoing the wave */}
+          <circle cx="1180" cy="120" r="74" fill={TEAL} />
+          <circle cx="1180" cy="120" r="74" fill="none" stroke={BONE} strokeWidth="4" />
+        </svg>
+
+        {/* Top bar — sign in / get started off to one side */}
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 pt-7">
+          <div className="flex items-center gap-3">
+            <span
+              className="grid h-9 w-9 place-items-center rounded-full text-sm font-black"
+              style={{ backgroundColor: INK, color: BONE }}
+            >
+              Aa
             </span>
+            <span
+              className="text-lg font-black tracking-tight"
+              style={{ color: BONE }}
+            >
+              AALTO
+            </span>
+          </div>
+          <div className="flex items-center gap-5">
             <Link
               href="/login"
-              className="text-sm text-white/50 hover:text-white transition-colors"
+              className="text-sm font-medium underline-offset-4 transition-opacity hover:opacity-70"
+              style={{ color: BONE }}
             >
               Sign in
             </Link>
             <Link
               href="/signup"
-              className="text-sm border rounded px-3 py-1.5 transition-colors hover:bg-white/5"
-              style={{ color: ACCENT, borderColor: `${ACCENT}55` }}
+              className="rounded-full px-5 py-2 text-sm font-bold shadow-sm transition-transform hover:-translate-y-0.5"
+              style={{ backgroundColor: INK, color: BONE }}
             >
               Get started
             </Link>
           </div>
         </div>
-      </header>
 
-      {/* Hero */}
-      <section className="mx-auto max-w-6xl px-6 pt-24 pb-20 sm:pt-32">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-          <div className="lg:col-span-7">
-            <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-white/40 leading-relaxed">
-              From Helsinki &mdash; named for Alvar Aalto,
-              <br className="hidden sm:block" />
-              architect of organic forms. <span style={{ color: ACCENT }}>aalto</span> means &ldquo;wave&rdquo; in Finnish.
-              <br className="hidden sm:block" />
-              Services rise and reshape like waves.
+        {/* Headline placed OFF-CENTER, overlapping the wave */}
+        <div className="relative mx-auto max-w-6xl px-6 pb-20 pt-28 sm:pt-40">
+          <div className="max-w-3xl">
+            <p
+              className="mb-6 text-[11px] font-bold uppercase tracking-[0.4em]"
+              style={{ fontFamily: MONO, color: BONE }}
+            >
+              Helsinki · aalto = wave
             </p>
             <h1
-              className="mt-8 text-[5rem] sm:text-[7rem] lg:text-[8.5rem] leading-[0.95] tracking-[-0.04em]"
-              style={{ fontFamily: "ui-serif, Georgia, 'Times New Roman', serif" }}
+              className="text-5xl font-black leading-[0.92] tracking-[-0.03em] sm:text-7xl lg:text-[5.5rem]"
+              style={{ color: INK }}
             >
-              Aalto
+              Architecture
+              <br />
+              that bends
+              <br />
+              <span style={{ color: CORAL }}>with the load.</span>
             </h1>
-            <p
-              className="mt-6 text-xl sm:text-2xl text-white/70 max-w-xl"
-              style={{ fontFamily: "ui-serif, Georgia, serif" }}
-            >
-              AI SRE that autonomously refactors its own service topology.
-            </p>
-            <p className="mt-6 max-w-xl text-base text-white/45 leading-relaxed">
-              <span
-                className="font-mono text-xs uppercase tracking-wider"
-                style={{ color: ACCENT }}
-              >
-                The problem &mdash;
-              </span>{" "}
-              traffic shifts. Architecture doesn&rsquo;t. Aalto watches load,
-              proposes splits and caches, proves parity, and redeploys the
-              graph &mdash; without an outage.
-            </p>
-            <div className="mt-10 flex items-center gap-4">
-              <Link
-                href="/signup"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded text-sm font-medium transition-colors"
-                style={{ backgroundColor: ACCENT, color: "#0a0a0a" }}
-              >
-                Connect a cluster
-                <span aria-hidden>&rarr;</span>
-              </Link>
-              <Link
-                href="/login"
-                className="text-sm text-white/50 hover:text-white transition-colors"
-              >
-                or sign in
-              </Link>
-            </div>
           </div>
 
-          {/* Wave illustration */}
-          <div className="lg:col-span-5 flex justify-center" style={{ color: ACCENT }}>
-            <svg
-              viewBox="0 0 320 320"
-              className="w-64 sm:w-80 opacity-90"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1}
-              strokeLinecap="round"
+          {/* Tagline + problem, set to the right as a counterweight */}
+          <div className="mt-10 grid gap-8 sm:grid-cols-2 sm:gap-16">
+            <div className="max-w-md">
+              <p className="text-lg font-medium" style={{ color: INK }}>
+                An AI SRE that autonomously refactors its own service topology —
+                watching traffic, splitting hot paths, proving parity, and
+                redeploying the graph without an outage.
+              </p>
+            </div>
+            <div
+              className="max-w-sm border-l-4 pl-5"
+              style={{ borderColor: MUSTARD }}
             >
-              {Array.from({ length: 14 }).map((_, i) => (
-                <path
-                  key={i}
-                  d={`M 10 ${60 + i * 16} C 70 ${40 + i * 14}, 130 ${100 + i * 12}, 190 ${60 + i * 14} S 290 ${30 + i * 12}, 310 ${70 + i * 14}`}
-                  opacity={1 - i * 0.06}
-                  strokeWidth={1 - i * 0.04}
-                />
-              ))}
-            </svg>
+              <p
+                className="text-[11px] font-bold uppercase tracking-[0.3em]"
+                style={{ fontFamily: MONO, color: TEAL }}
+              >
+                The problem
+              </p>
+              <p className="mt-2 text-2xl font-bold leading-tight">
+                Traffic shifts. Architecture doesn&rsquo;t.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Before / After topology */}
-      <section className="mx-auto max-w-6xl px-6 py-20 border-t border-white/5">
-        <div className="flex items-end justify-between mb-10 flex-wrap gap-4">
-          <div>
-            <p
-              className="font-mono text-[11px] uppercase tracking-[0.3em]"
-              style={{ color: ACCENT }}
-            >
-              A refactor in two diagrams
-            </p>
-            <h2
-              className="mt-3 text-3xl sm:text-4xl tracking-tight max-w-2xl"
-              style={{ fontFamily: "ui-serif, Georgia, serif" }}
-            >
-              user-profile-svc, before and after Aalto.
-            </h2>
-          </div>
-          <span className="hidden sm:block font-mono text-[10px] uppercase tracking-wider text-white/30">
-            100k req/s &middot; p99 latency
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Before */}
-          <div className="rounded-md border bg-[#0d0d0d] p-6"
-            style={{ borderColor: "rgba(255,255,255,0.08)" }}
+      {/* ════════════ MONDRIAN / BAUHAUS BENTO — DESIGN-LED GRID ════════════ */}
+      <section className="mx-auto max-w-6xl px-6 pb-20">
+        {/* Asymmetric grid: 6-col, mixed spans, flat color blocks */}
+        <div className="grid auto-rows-[minmax(0,auto)] grid-cols-1 gap-4 sm:grid-cols-6">
+          {/* ── CENTERPIECE: BEFORE / AFTER topology in flat shapes ── */}
+          <div
+            className="rounded-3xl p-7 sm:col-span-4 sm:row-span-2"
+            style={{ backgroundColor: INK, color: BONE }}
           >
-            <div className="flex items-center justify-between mb-5">
-              <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/40">
-                Before
-              </span>
-              <span className="font-mono text-[10px] uppercase tracking-wider" style={{ color: ACCENT }}>
-                hot path
-              </span>
-            </div>
-
-            <div className="flex items-center justify-center py-10">
-              <div className="flex flex-col items-center gap-3">
-                <div className="font-mono text-[10px] uppercase tracking-wider text-white/35">
-                  clients
-                </div>
-                <div className="font-mono text-xs" style={{ color: ACCENT }}>
-                  &darr; 100k req/s
-                </div>
-                <ServiceBox label="user-profile-svc" rps="100k req/s" status="hot" />
-              </div>
-            </div>
-
-            <div className="border-t border-white/5 mt-2 pt-4 grid grid-cols-3 gap-3">
-              <div>
-                <div className="font-mono text-[10px] text-white/35 uppercase tracking-wider">p99</div>
-                <div className="font-mono text-sm" style={{ color: ACCENT }}>840ms</div>
-              </div>
-              <div>
-                <div className="font-mono text-[10px] text-white/35 uppercase tracking-wider">err rate</div>
-                <div className="font-mono text-sm text-white/80">1.8%</div>
-              </div>
-              <div>
-                <div className="font-mono text-[10px] text-white/35 uppercase tracking-wider">services</div>
-                <div className="font-mono text-sm text-white/80">1</div>
-              </div>
-            </div>
-          </div>
-
-          {/* After */}
-          <div className="rounded-md border bg-[#0d0d0d] p-6"
-            style={{ borderColor: `${ACCENT}55`, boxShadow: `0 12px 40px -10px ${ACCENT}30` }}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <span className="font-mono text-[10px] uppercase tracking-[0.25em]" style={{ color: ACCENT }}>
-                After &middot; Aalto refactor
-              </span>
-              <span className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-                organic split
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-black tracking-tight">
+                One refactor, drawn flat.
+              </h2>
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.3em]"
+                style={{ fontFamily: MONO, color: CORAL }}
+              >
+                100k req/s
               </span>
             </div>
 
-            <div className="flex flex-col items-center gap-3 py-2">
-              <div className="font-mono text-[10px] uppercase tracking-wider text-white/35">
-                clients
-              </div>
-              <div className="font-mono text-xs text-white/60">
-                &darr; 100k req/s
+            <div className="mt-8 grid grid-cols-1 items-center gap-6 sm:grid-cols-[1fr_auto_1.4fr]">
+              {/* BEFORE — one big coral circle */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 160 160" className="w-36 sm:w-40" aria-hidden>
+                  <circle cx="80" cy="80" r="70" fill={CORAL} />
+                  <text
+                    x="80"
+                    y="74"
+                    textAnchor="middle"
+                    fontFamily={MONO}
+                    fontSize="13"
+                    fontWeight="700"
+                    fill={INK}
+                  >
+                    monolith
+                  </text>
+                  <text
+                    x="80"
+                    y="94"
+                    textAnchor="middle"
+                    fontFamily={MONO}
+                    fontSize="12"
+                    fill={INK}
+                  >
+                    p99 840ms
+                  </text>
+                </svg>
+                <span
+                  className="mt-3 text-[10px] font-bold uppercase tracking-[0.3em]"
+                  style={{ fontFamily: MONO, color: "rgba(244,241,236,0.6)" }}
+                >
+                  Before · 1 service
+                </span>
               </div>
 
-              {/* Cache */}
-              <ServiceBox label="edge-cache" rps="86% hit" status="cache" />
-
-              {/* Split arrow */}
-              <svg viewBox="0 0 160 36" className="w-44" fill="none" stroke={ACCENT} strokeWidth="1.2">
-                <path d="M80 2 L 80 14 L 20 24 L 20 34" />
-                <path d="M80 2 L 80 14 L 80 34" />
-                <path d="M80 2 L 80 14 L 140 24 L 140 34" />
+              {/* connector */}
+              <svg viewBox="0 0 60 40" className="hidden w-14 sm:block" aria-hidden>
+                <line x1="2" y1="20" x2="46" y2="20" stroke={MUSTARD} strokeWidth="4" />
+                <path d="M40 12 L54 20 L40 28 Z" fill={MUSTARD} />
               </svg>
 
-              <div className="grid grid-cols-3 gap-3 w-full">
-                <ServiceBox label="read-path" rps="74k req/s" status="cool" />
-                <ServiceBox label="profile-core" rps="14k req/s" status="warm" />
-                <ServiceBox label="write-path" rps="12k req/s" status="cool" />
-              </div>
-            </div>
-
-            <div className="border-t border-white/5 mt-5 pt-4 grid grid-cols-3 gap-3">
-              <div>
-                <div className="font-mono text-[10px] text-white/35 uppercase tracking-wider">p99</div>
-                <div className="font-mono text-sm" style={{ color: ACCENT }}>290ms</div>
-              </div>
-              <div>
-                <div className="font-mono text-[10px] text-white/35 uppercase tracking-wider">err rate</div>
-                <div className="font-mono text-sm text-white/80">0.2%</div>
-              </div>
-              <div>
-                <div className="font-mono text-[10px] text-white/35 uppercase tracking-wider">services</div>
-                <div className="font-mono text-sm text-white/80">3 + cache</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.2em] text-white/40 text-center">
-          latency p99 down 60% &middot; zero downtime &middot; rollback armed
-        </p>
-      </section>
-
-      {/* Refactor log */}
-      <section className="mx-auto max-w-6xl px-6 py-20 border-t border-white/5">
-        <p
-          className="font-mono text-[11px] uppercase tracking-[0.3em]"
-          style={{ color: ACCENT }}
-        >
-          Refactor log
-        </p>
-        <h2
-          className="mt-3 text-3xl sm:text-4xl tracking-tight max-w-2xl"
-          style={{ fontFamily: "ui-serif, Georgia, serif" }}
-        >
-          Eight minutes from hot service to promoted refactor.
-        </h2>
-
-        <div
-          className="mt-10 rounded-md border bg-[#080808] overflow-hidden"
-          style={{ borderColor: `${ACCENT}33` }}
-        >
-          <div className="flex items-center justify-between border-b border-white/5 px-4 py-2.5">
-            <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/40">
-              aalto &middot; refactor #1407
-            </span>
-            <span className="font-mono text-[10px]" style={{ color: ACCENT }}>
-              auto &middot; canary &middot; proven
-            </span>
-          </div>
-          <pre className="px-4 py-5 overflow-x-auto font-mono text-[12px] leading-[1.8] text-white/85">
-{logEntries
-  .map((e) => `[${e.t}] ${e.body}`)
-  .join("\n")}
-          </pre>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="border-t border-white/5">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-white/5 rounded-lg overflow-hidden">
-            <div className="bg-[#0d0d0d] p-10 text-center">
-              <div
-                className="text-5xl sm:text-6xl tracking-tight"
-                style={{ fontFamily: "ui-serif, Georgia, serif", color: ACCENT }}
-              >
-                640
-              </div>
-              <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.25em] text-white/40">
-                refactors deployed
-              </div>
-            </div>
-            <div className="bg-[#0d0d0d] p-10 text-center">
-              <div
-                className="text-5xl sm:text-6xl tracking-tight"
-                style={{ fontFamily: "ui-serif, Georgia, serif", color: ACCENT }}
-              >
-                0
-              </div>
-              <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.25em] text-white/40">
-                outages
-              </div>
-            </div>
-            <div className="bg-[#0d0d0d] p-10 text-center">
-              <div
-                className="text-5xl sm:text-6xl tracking-tight"
-                style={{ fontFamily: "ui-serif, Georgia, serif", color: ACCENT }}
-              >
-                &minus;47%
-              </div>
-              <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.25em] text-white/40">
-                p99 latency
+              {/* AFTER — three smaller circles + a square (cache), connector lines */}
+              <div className="flex flex-col items-center">
+                <svg viewBox="0 0 240 160" className="w-full max-w-[240px]" aria-hidden>
+                  {/* connectors from a top hub */}
+                  <line x1="120" y1="20" x2="40" y2="92" stroke="rgba(244,241,236,0.35)" strokeWidth="2" />
+                  <line x1="120" y1="20" x2="120" y2="92" stroke="rgba(244,241,236,0.35)" strokeWidth="2" />
+                  <line x1="120" y1="20" x2="200" y2="92" stroke="rgba(244,241,236,0.35)" strokeWidth="2" />
+                  {/* cache square (hub) */}
+                  <rect x="104" y="6" width="32" height="32" rx="5" fill={TEAL} />
+                  {/* three service circles */}
+                  <circle cx="40" cy="116" r="34" fill={MUSTARD} />
+                  <circle cx="120" cy="116" r="34" fill={CORAL} />
+                  <circle cx="200" cy="116" r="34" fill="#7fb5ad" />
+                  <text x="40" y="120" textAnchor="middle" fontFamily={MONO} fontSize="9" fontWeight="700" fill={INK}>read</text>
+                  <text x="120" y="120" textAnchor="middle" fontFamily={MONO} fontSize="9" fontWeight="700" fill={INK}>core</text>
+                  <text x="200" y="120" textAnchor="middle" fontFamily={MONO} fontSize="9" fontWeight="700" fill={INK}>write</text>
+                  <text x="120" y="26" textAnchor="middle" fontFamily={MONO} fontSize="8" fontWeight="700" fill={BONE}>cache</text>
+                </svg>
+                <span
+                  className="mt-3 text-[10px] font-bold uppercase tracking-[0.3em]"
+                  style={{ fontFamily: MONO, color: CORAL }}
+                >
+                  After · 3 services + cache · p99 290ms
+                </span>
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* CTA */}
-      <section className="border-t border-white/5">
-        <div className="mx-auto max-w-3xl px-6 py-24 text-center">
-          <h2
-            className="text-3xl sm:text-4xl tracking-tight"
-            style={{ fontFamily: "ui-serif, Georgia, serif" }}
+          {/* ── TALL BLOCK: refactor log on a colored field ── */}
+          <div
+            className="rounded-3xl p-6 sm:col-span-2 sm:row-span-2"
+            style={{ backgroundColor: TEAL, color: BONE }}
           >
-            Architecture should change as fast as traffic does.
-          </h2>
-          <p className="mt-4 text-white/50">
-            Aalto reshapes your topology while production keeps serving.
-          </p>
-          <div className="mt-8">
-            <Link
-              href="/signup"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded text-sm font-medium transition-colors"
-              style={{ backgroundColor: ACCENT, color: "#0a0a0a" }}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-black uppercase tracking-wider">
+                Refactor log
+              </span>
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: MUSTARD }}
+              />
+            </div>
+            <div className="mt-5 space-y-3" style={{ fontFamily: MONO }}>
+              {log.map(([t, body]) => (
+                <div key={t} className="text-[12px] leading-snug">
+                  <span style={{ color: MUSTARD }}>[{t}]</span>{" "}
+                  <span style={{ color: "rgba(244,241,236,0.92)" }}>{body}</span>
+                </div>
+              ))}
+            </div>
+            <div
+              className="mt-6 border-t pt-4 text-[10px] font-bold uppercase tracking-[0.25em]"
+              style={{ borderColor: "rgba(244,241,236,0.25)", fontFamily: MONO }}
             >
-              Connect a cluster
-              <span aria-hidden>&rarr;</span>
-            </Link>
+              auto · canary · proven · rollback armed
+            </div>
           </div>
+
+          {/* ── STAT TILES: bold flat-color squares with big numerals ── */}
+          <div
+            className="flex flex-col justify-between rounded-3xl p-6 sm:col-span-2"
+            style={{ backgroundColor: CORAL, color: INK }}
+          >
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.3em]"
+              style={{ fontFamily: MONO }}
+            >
+              Refactors
+            </span>
+            <span className="mt-6 text-6xl font-black leading-none">640</span>
+          </div>
+
+          <div
+            className="flex flex-col justify-between rounded-3xl p-6 sm:col-span-2"
+            style={{ backgroundColor: MUSTARD, color: INK }}
+          >
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.3em]"
+              style={{ fontFamily: MONO }}
+            >
+              Outages
+            </span>
+            <span className="mt-6 text-6xl font-black leading-none">0</span>
+          </div>
+
+          <div
+            className="flex flex-col justify-between rounded-3xl border-2 p-6 sm:col-span-2"
+            style={{ backgroundColor: BONE, borderColor: INK, color: INK }}
+          >
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.3em]"
+              style={{ fontFamily: MONO, color: TEAL }}
+            >
+              p99 latency
+            </span>
+            <span className="mt-6 text-6xl font-black leading-none">
+              &darr;47<span style={{ color: CORAL }}>%</span>
+            </span>
+          </div>
+        </div>
+
+        {/* A wide modernist statement bar — circles + bold type */}
+        <div
+          className="mt-4 flex flex-wrap items-center gap-6 rounded-3xl px-7 py-8"
+          style={{ backgroundColor: INK, color: BONE }}
+        >
+          <svg viewBox="0 0 120 40" className="h-10 w-32 shrink-0" aria-hidden>
+            <circle cx="20" cy="20" r="16" fill={CORAL} />
+            <circle cx="52" cy="20" r="12" fill={MUSTARD} />
+            <circle cx="80" cy="20" r="9" fill={TEAL} />
+            <circle cx="104" cy="20" r="6" fill="#7fb5ad" />
+          </svg>
+          <p className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Aalto reshapes the topology while production keeps serving.
+          </p>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row items-center justify-between px-6 py-8">
-          <div className="flex items-center gap-3" style={{ color: ACCENT }}>
-            <AaltoMark size={18} />
-            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/60">
-              {appConfig.name} &middot; Helsinki &middot; aalto.fi
-            </span>
+      {/* ════════════════════ WAVE-MOTIF FOOTER ════════════════════ */}
+      <footer className="relative mt-8">
+        {/* echo the hero curve, flipped, in coral */}
+        <svg
+          className="block h-32 w-full sm:h-44"
+          viewBox="0 0 1440 200"
+          preserveAspectRatio="none"
+          aria-hidden
+        >
+          <path
+            d="M0,120 C260,40 480,180 760,120 C1020,66 1180,160 1440,90 L1440,200 L0,200 Z"
+            fill={CORAL}
+          />
+          <path
+            d="M0,120 C260,40 480,180 760,120 C1020,66 1180,160 1440,90"
+            fill="none"
+            stroke={MUSTARD}
+            strokeWidth="5"
+          />
+        </svg>
+
+        <div style={{ backgroundColor: CORAL }}>
+          <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-6 pb-12 sm:flex-row sm:items-center">
+            <div>
+              <div
+                className="text-3xl font-black tracking-tight"
+                style={{ color: INK }}
+              >
+                AALTO
+              </div>
+              <div
+                className="mt-1 text-[11px] font-bold uppercase tracking-[0.35em]"
+                style={{ fontFamily: MONO, color: "rgba(22,20,15,0.7)" }}
+              >
+                Aalto · Helsinki · aalto.fi
+              </div>
+            </div>
+            <a
+              href="https://abduljaleel.xyz/aletheia/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.3em] transition-transform hover:-translate-y-0.5"
+              style={{ backgroundColor: INK, color: BONE, fontFamily: MONO }}
+            >
+              Part of the Aletheia stack &#8599;
+            </a>
           </div>
-          <a
-            href="https://abduljaleel.xyz/aletheia/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 border rounded px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.25em] transition-colors hover:bg-white/5"
-            style={{ borderColor: `${ACCENT}55`, color: ACCENT }}
-          >
-            Part of the Aletheia stack
-            <span aria-hidden>&#8599;</span>
-          </a>
-        </div>
-        <div className="mx-auto max-w-6xl px-6 pb-6 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-white/20">
-          Infrastructure layer &middot; from Helsinki, services that move like waves
         </div>
       </footer>
     </div>
