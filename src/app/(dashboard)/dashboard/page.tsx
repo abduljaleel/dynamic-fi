@@ -1,34 +1,135 @@
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
-import {
-  experiments,
-  getExperimentStats,
-  getActiveExperiments,
-  getConcludedExperiments,
-} from "@/lib/data/experiments";
-import { Zap, FlaskConical, TrendingUp, Clock, ArrowRight } from "lucide-react";
+import { type Experiment } from "@/lib/data/experiments";
+import { getProfileInfo, listExperiments, seedDemoData } from "@/lib/data/api";
+import { Zap, FlaskConical, TrendingUp, Clock, ArrowRight, Database, Loader2 } from "lucide-react";
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+function computeStats(experiments: Experiment[]) {
+  const total = experiments.length;
+  const running = experiments.filter((e) => e.status === "running").length;
+  const significant = experiments.filter(
+    (e) =>
+      e.status === "concluded" &&
+      e.variants.some((v) => v.metrics.some((m) => m.significant && m.direction === "positive"))
+  ).length;
+  const concluded = experiments.filter((e) => e.status === "concluded" && e.endDate);
+  const avgDuration =
+    concluded.length > 0
+      ? Math.round(
+          concluded.reduce((sum, e) => {
+            const start = new Date(e.startDate);
+            const end = new Date(e.endDate!);
+            return sum + (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+          }, 0) / concluded.length
+        )
+      : 0;
 
-  const stats = getExperimentStats();
-  const active = getActiveExperiments();
-  const concluded = getConcludedExperiments().slice(0, 3);
+  return { total, running, significant, avgDuration };
+}
+
+export default function DashboardPage() {
+  const [experiments, setExperiments] = useState<Experiment[]>([]);
+  const [userName, setUserName] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [data, profile] = await Promise.all([listExperiments(), getProfileInfo()]);
+      setExperiments(data);
+      setUserName(profile.name);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load experiments");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const handleSeed = async () => {
+    setSeeding(true);
+    setError(null);
+    try {
+      await seedDemoData();
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load demo data");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const stats = computeStats(experiments);
+  const active = experiments.filter((e) => e.status === "running" || e.status === "analyzing");
+  const concluded = experiments.filter((e) => e.status === "concluded").slice(0, 3);
+  const isEmpty = !loading && experiments.length === 0;
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">Loading your experiments...</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-3 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {[0, 1].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-5 w-48" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-2 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome back, {user?.user_metadata?.full_name || user?.email}
-        </p>
+        <p className="text-muted-foreground">Welcome back, {userName}</p>
       </div>
+
+      {error && (
+        <Card className="border-destructive/50">
+          <CardContent className="py-4 flex items-center justify-between gap-4">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -71,16 +172,27 @@ export default async function DashboardPage() {
         </div>
         {active.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              No active experiments. Design a new one to get started.
+            <CardContent className="py-8 text-center text-muted-foreground space-y-4">
+              <p>No active experiments. Design a new one to get started.</p>
+              {isEmpty && (
+                <Button onClick={() => void handleSeed()} disabled={seeding}>
+                  {seeding ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Database className="mr-2 h-4 w-4" />
+                  )}
+                  {seeding ? "Loading demo data..." : "Load demo data"}
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {active.map((exp) => {
-              const progress = Math.round(
-                (exp.totalSampleSize / exp.requiredSampleSize) * 100
-              );
+              const progress =
+                exp.requiredSampleSize > 0
+                  ? Math.round((exp.totalSampleSize / exp.requiredSampleSize) * 100)
+                  : 0;
               return (
                 <Link key={exp.id} href={`/experiments/${exp.id}`}>
                   <Card className="hover:border-foreground/20 transition-colors cursor-pointer">

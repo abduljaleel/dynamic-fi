@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { experiments, type ExperimentStatus } from "@/lib/data/experiments";
+import { type Experiment, type ExperimentStatus } from "@/lib/data/experiments";
+import { listExperiments } from "@/lib/data/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -13,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 
 const statusFilters: { label: string; value: ExperimentStatus | "all" }[] = [
@@ -39,6 +40,26 @@ const typeLabels: Record<string, string> = {
 
 export default function ExperimentsPage() {
   const [filter, setFilter] = useState<ExperimentStatus | "all">("all");
+  const [experiments, setExperiments] = useState<Experiment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await listExperiments();
+        if (!cancelled) setExperiments(data);
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load experiments");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filtered =
     filter === "all" ? experiments : experiments.filter((e) => e.status === filter);
@@ -59,6 +80,14 @@ export default function ExperimentsPage() {
           </Button>
         </Link>
       </div>
+
+      {error && (
+        <Card className="border-destructive/50">
+          <CardContent className="py-4">
+            <p className="text-sm text-destructive">{error}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <div className="flex gap-2">
@@ -96,10 +125,32 @@ export default function ExperimentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                [0, 1, 2].map((i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-48" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-4 w-16 ml-auto" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No experiments match this filter.
+                    {experiments.length === 0
+                      ? "No experiments yet. Create one to get started."
+                      : "No experiments match this filter."}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -115,7 +166,7 @@ export default function ExperimentsPage() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">
-                        {typeLabels[exp.type]}
+                        {typeLabels[exp.type] ?? exp.type}
                       </span>
                     </TableCell>
                     <TableCell>

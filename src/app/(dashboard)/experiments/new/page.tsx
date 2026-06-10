@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createExperiment, listTemplates, type MethodologyTemplate } from "@/lib/data/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ import {
   Plus,
   Trash2,
   Calculator,
+  Loader2,
 } from "lucide-react";
 
 interface MetricDef {
@@ -69,10 +71,41 @@ export default function NewExperimentPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
 
+  // Methodology templates (optional starting point)
+  const [templates, setTemplates] = useState<MethodologyTemplate[]>([]);
+  const [templateId, setTemplateId] = useState<string>("none");
+
+  // Submission
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   // Step 1: Hypothesis
   const [hypothesis, setHypothesis] = useState("");
   const [experimentType, setExperimentType] = useState("a/b-test");
   const [experimentName, setExperimentName] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    listTemplates()
+      .then((data) => {
+        if (!cancelled) setTemplates(data);
+      })
+      .catch(() => {
+        // Templates are optional in this flow; ignore load failures.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const applyTemplate = (id: string) => {
+    setTemplateId(id);
+    if (id === "none") return;
+    const template = templates.find((t) => t.id === id);
+    if (template) {
+      setExperimentType(template.experimentType || "a/b-test");
+    }
+  };
 
   // Step 2: Metrics
   const [primaryMetric, setPrimaryMetric] = useState<MetricDef>({
@@ -143,6 +176,41 @@ export default function NewExperimentPage() {
     }
   };
 
+  const handleLaunch = async () => {
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const id = await createExperiment({
+        name: experimentName.trim(),
+        hypothesis: hypothesis.trim(),
+        experimentType,
+        primaryMetric: {
+          name: primaryMetric.name.trim(),
+          direction: primaryMetric.direction,
+          minimumDetectableEffect: parseFloat(primaryMetric.mde) || 0,
+        },
+        guardrailMetrics: guardrailMetrics
+          .filter((gm) => gm.name.trim())
+          .map((gm) => ({
+            name: gm.name.trim(),
+            direction: gm.direction,
+            minimumDetectableEffect: parseFloat(gm.mde) || 0,
+          })),
+        variants: variants.map((v) => ({
+          name: v.name.trim(),
+          allocationPct: parseFloat(v.allocation) || 0,
+        })),
+        baselineRate: parseFloat(baselineRate) || 0,
+        significanceLevel: parseFloat(significanceLevel) || 0.05,
+        sampleSizeTarget: totalRequired,
+      });
+      router.push(`/experiments/${id}`);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : "Failed to create experiment");
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
@@ -180,6 +248,29 @@ export default function NewExperimentPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {templates.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="template">Start from Template (optional)</Label>
+                <Select value={templateId} onValueChange={(v) => applyTemplate(v ?? "none")}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Blank experiment</SelectItem>
+                    {templates.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {templateId !== "none" && (
+                  <p className="text-xs text-muted-foreground">
+                    {templates.find((t) => t.id === templateId)?.description}
+                  </p>
+                )}
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="name">Experiment Name</Label>
               <Input
@@ -589,12 +680,17 @@ export default function NewExperimentPage() {
         </Card>
       )}
 
+      {/* Submission error */}
+      {submitError && (
+        <p className="text-sm text-destructive text-right">{submitError}</p>
+      )}
+
       {/* Navigation */}
       <div className="flex justify-between">
         <Button
           variant="outline"
           onClick={() => setStep(step - 1)}
-          disabled={step === 0}
+          disabled={step === 0 || submitting}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Previous
@@ -605,9 +701,13 @@ export default function NewExperimentPage() {
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         ) : (
-          <Button onClick={() => router.push("/experiments")}>
-            <Check className="mr-2 h-4 w-4" />
-            Launch Experiment
+          <Button onClick={() => void handleLaunch()} disabled={submitting}>
+            {submitting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="mr-2 h-4 w-4" />
+            )}
+            {submitting ? "Launching..." : "Launch Experiment"}
           </Button>
         )}
       </div>

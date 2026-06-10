@@ -1,8 +1,13 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getExperiment } from "@/lib/data/experiments";
+import { type Experiment, type ExperimentStatus } from "@/lib/data/experiments";
+import {
+  concludeExperiment,
+  getExperimentById,
+  updateExperimentStatus,
+} from "@/lib/data/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +32,9 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Loader2,
+  Play,
+  BarChart3,
 } from "lucide-react";
 
 const statusStyles: Record<string, string> = {
@@ -49,11 +57,105 @@ export default function ExperimentDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const experiment = getExperiment(id);
 
-  const [decision, setDecision] = useState(experiment?.decision || "");
-  const [learnings, setLearnings] = useState(experiment?.keyLearning || "");
-  const [conclusionText, setConclusionText] = useState(experiment?.conclusion || "");
+  const [experiment, setExperiment] = useState<Experiment | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [mutating, setMutating] = useState(false);
+
+  const [decision, setDecision] = useState("");
+  const [learnings, setLearnings] = useState("");
+  const [conclusionText, setConclusionText] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getExperimentById(id);
+        if (cancelled) return;
+        setExperiment(data);
+        if (data) {
+          setDecision(data.decision || "");
+          setLearnings(data.keyLearning || "");
+          setConclusionText(data.conclusion || "");
+        }
+      } catch (e) {
+        if (!cancelled)
+          setError(e instanceof Error ? e.message : "Failed to load experiment");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const handleStatusChange = async (status: ExperimentStatus) => {
+    if (!experiment) return;
+    setMutating(true);
+    setError(null);
+    try {
+      await updateExperimentStatus(experiment.id, status);
+      setExperiment({
+        ...experiment,
+        status,
+        startDate:
+          status === "running"
+            ? new Date().toISOString().slice(0, 10)
+            : experiment.startDate,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to update status");
+    } finally {
+      setMutating(false);
+    }
+  };
+
+  const handleConclude = async () => {
+    if (!experiment || !decision) return;
+    setMutating(true);
+    setError(null);
+    try {
+      await concludeExperiment(experiment.id, {
+        decision: decision as "ship" | "iterate" | "discard",
+        conclusion: conclusionText,
+        keyLearning: learnings,
+      });
+      const outcome =
+        decision === "ship" ? "shipped" : decision === "iterate" ? "iterated" : "discarded";
+      setExperiment({
+        ...experiment,
+        status: "concluded",
+        decision: decision as Experiment["decision"],
+        conclusion: conclusionText,
+        keyLearning: learnings,
+        outcome,
+        endDate: new Date().toISOString().slice(0, 10),
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to conclude experiment");
+    } finally {
+      setMutating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" size="sm" onClick={() => router.push("/experiments")}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        <Card>
+          <CardContent className="py-12 flex items-center justify-center text-muted-foreground">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Loading experiment...
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!experiment) {
     return (
@@ -64,16 +166,17 @@ export default function ExperimentDetailPage({
         </Button>
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Experiment not found.
+            {error || "Experiment not found."}
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  const progress = Math.round(
-    (experiment.totalSampleSize / experiment.requiredSampleSize) * 100
-  );
+  const progress =
+    experiment.requiredSampleSize > 0
+      ? Math.round((experiment.totalSampleSize / experiment.requiredSampleSize) * 100)
+      : 0;
 
   return (
     <div className="space-y-6">
@@ -98,7 +201,39 @@ export default function ExperimentDetailPage({
             </p>
           </div>
         </div>
+        {experiment.status === "design" && (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={mutating}
+            onClick={() => void handleStatusChange("running")}
+          >
+            {mutating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Play className="mr-2 h-4 w-4" />
+            )}
+            Start Experiment
+          </Button>
+        )}
+        {experiment.status === "running" && (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={mutating}
+            onClick={() => void handleStatusChange("analyzing")}
+          >
+            {mutating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <BarChart3 className="mr-2 h-4 w-4" />
+            )}
+            Begin Analysis
+          </Button>
+        )}
       </div>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
@@ -217,7 +352,8 @@ export default function ExperimentDetailPage({
 
         {/* Results Tab */}
         <TabsContent value="results" className="space-y-6">
-          {experiment.variants[0].metrics.length === 0 ? (
+          {experiment.variants.length === 0 ||
+          experiment.variants[0].metrics.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 No results yet. This experiment is still in the design phase.
@@ -372,8 +508,12 @@ export default function ExperimentDetailPage({
                     onChange={(e) => setLearnings(e.target.value)}
                   />
                 </div>
-                <Button disabled={!decision}>
-                  <CheckCircle className="mr-2 h-4 w-4" />
+                <Button disabled={!decision || mutating} onClick={() => void handleConclude()}>
+                  {mutating ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                  )}
                   Submit Conclusion
                 </Button>
               </CardContent>
