@@ -325,7 +325,8 @@ export async function createExperiment(input: NewExperimentInput): Promise<strin
       hypothesis: input.hypothesis,
       status: "design",
       experiment_type: input.experimentType,
-      start_date: new Date().toISOString(),
+      // Leave start_date null while in 'design'; updateExperimentStatus sets it
+      // when the experiment transitions to 'running'.
       sample_size_target: input.sampleSizeTarget,
       baseline_rate: input.baselineRate,
       significance_level: input.significanceLevel,

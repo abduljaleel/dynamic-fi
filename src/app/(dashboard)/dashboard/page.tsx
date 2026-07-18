@@ -232,10 +232,10 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Recent Conclusions</h2>
           <Link
-            href="/library"
+            href="/experiments"
             className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
-            View library <ArrowRight className="h-3 w-3" />
+            View all <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
         {concluded.length === 0 ? (

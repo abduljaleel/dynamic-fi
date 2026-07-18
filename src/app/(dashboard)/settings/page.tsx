@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -30,16 +31,38 @@ export default function SettingsPage() {
     e.preventDefault();
     setLoading(true);
     setMessage("");
+    setIsError(false);
 
-    const { error } = await supabase.auth.updateUser({
+    // 1) Auth user_metadata (drives the header avatar/name).
+    const { error: authError } = await supabase.auth.updateUser({
       data: { full_name: fullName },
     });
-
-    if (error) {
-      setMessage(error.message);
-    } else {
-      setMessage("Profile updated successfully");
+    if (authError) {
+      setIsError(true);
+      setMessage(authError.message);
+      setLoading(false);
+      return;
     }
+
+    // 2) profiles row (drives the dashboard greeting and createdBy labels).
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ full_name: fullName })
+        .eq("id", user.id);
+      if (profileError) {
+        setIsError(true);
+        setMessage(profileError.message);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setIsError(false);
+    setMessage("Profile updated successfully");
     setLoading(false);
   }
 
@@ -58,7 +81,15 @@ export default function SettingsPage() {
         <CardContent>
           <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md">
             {message && (
-              <div className="rounded-md bg-muted p-3 text-sm">{message}</div>
+              <div
+                className={
+                  isError
+                    ? "rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+                    : "rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300"
+                }
+              >
+                {message}
+              </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

@@ -323,7 +323,7 @@ export default function ExperimentDetailPage({
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Start Date</p>
-                  <p className="font-medium">{experiment.startDate}</p>
+                  <p className="font-medium">{experiment.startDate || "Not started"}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">End Date</p>
@@ -390,7 +390,9 @@ export default function ExperimentDetailPage({
                         </TableHeader>
                         <TableBody>
                           {experiment.variants.map((variant) => {
-                            const metric = variant.metrics[metricIndex];
+                            const metric = variant.metrics.find(
+                              (m) => m.name === metricName
+                            );
                             if (!metric) return null;
                             return (
                               <TableRow key={variant.id}>
@@ -455,6 +457,31 @@ export default function ExperimentDetailPage({
                 </CardContent>
               </Card>
             </div>
+          ) : experiment.status === "design" ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Not ready to conclude</CardTitle>
+                <CardDescription>
+                  Start the experiment before concluding — it has not begun
+                  collecting data yet.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={mutating}
+                  onClick={() => void handleStatusChange("running")}
+                >
+                  {mutating ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Play className="mr-2 h-4 w-4" />
+                  )}
+                  Start Experiment
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <Card>
               <CardHeader>
@@ -508,7 +535,10 @@ export default function ExperimentDetailPage({
                     onChange={(e) => setLearnings(e.target.value)}
                   />
                 </div>
-                <Button disabled={!decision || mutating} onClick={() => void handleConclude()}>
+                <Button
+                  disabled={!decision || !conclusionText.trim() || mutating}
+                  onClick={() => void handleConclude()}
+                >
                   {mutating ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (

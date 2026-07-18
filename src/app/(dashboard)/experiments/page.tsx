@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type Experiment, type ExperimentStatus } from "@/lib/data/experiments";
 import { listExperiments } from "@/lib/data/api";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function ExperimentsPage() {
+  const router = useRouter();
   const [filter, setFilter] = useState<ExperimentStatus | "all">("all");
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,7 +157,11 @@ export default function ExperimentsPage() {
                 </TableRow>
               ) : (
                 filtered.map((exp) => (
-                  <TableRow key={exp.id} className="cursor-pointer hover:bg-muted/50">
+                  <TableRow
+                    key={exp.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => router.push(`/experiments/${exp.id}`)}
+                  >
                     <TableCell>
                       <Link
                         href={`/experiments/${exp.id}`}
@@ -177,7 +183,7 @@ export default function ExperimentsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {exp.startDate}
+                      {exp.startDate || "—"}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">
                       {exp.totalSampleSize.toLocaleString()}

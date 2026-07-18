@@ -104,8 +104,22 @@ export default function NewExperimentPage() {
     const template = templates.find((t) => t.id === id);
     if (template) {
       setExperimentType(template.experimentType || "a/b-test");
+      // Seed the hypothesis with the template's methodology scaffold when the
+      // user hasn't written anything yet, so the template shapes the draft.
+      setHypothesis((prev) =>
+        prev.trim()
+          ? prev
+          : template.description
+            ? `Methodology: ${template.name}. ${template.description}\n\nIf we [change X], then [metric Y] will [direction] by at least [Z%] because [reason].`
+            : prev
+      );
     }
   };
+
+  const selectedTemplate =
+    templateId !== "none"
+      ? templates.find((t) => t.id === templateId) ?? null
+      : null;
 
   // Step 2: Metrics
   const [primaryMetric, setPrimaryMetric] = useState<MetricDef>({
@@ -131,6 +145,12 @@ export default function NewExperimentPage() {
     parseFloat(significanceLevel)
   );
   const totalRequired = requiredPerVariant * variants.length;
+
+  const allocationTotal = variants.reduce(
+    (sum, v) => sum + (parseFloat(v.allocation) || 0),
+    0
+  );
+  const allocationValid = Math.abs(allocationTotal - 100) < 0.01;
 
   const addGuardrailMetric = () => {
     setGuardrailMetrics([...guardrailMetrics, { name: "", direction: "increase", mde: "" }]);
@@ -168,7 +188,11 @@ export default function NewExperimentPage() {
       case 1:
         return primaryMetric.name.trim() && primaryMetric.mde;
       case 2:
-        return variants.length >= 2 && variants.every((v) => v.name.trim());
+        return (
+          variants.length >= 2 &&
+          variants.every((v) => v.name.trim()) &&
+          allocationValid
+        );
       case 3:
         return baselineRate && totalRequired > 0;
       default:
@@ -264,10 +288,25 @@ export default function NewExperimentPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                {templateId !== "none" && (
-                  <p className="text-xs text-muted-foreground">
-                    {templates.find((t) => t.id === templateId)?.description}
-                  </p>
+                {selectedTemplate && (
+                  <div className="space-y-2 rounded-lg bg-muted p-3">
+                    <p className="text-xs text-muted-foreground">
+                      {selectedTemplate.description}
+                    </p>
+                    {selectedTemplate.checklist.length > 0 && (
+                      <ul className="space-y-1">
+                        {selectedTemplate.checklist.map((item, i) => (
+                          <li
+                            key={i}
+                            className="flex gap-2 text-xs text-muted-foreground"
+                          >
+                            <Check className="mt-0.5 h-3 w-3 shrink-0" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -493,13 +532,10 @@ export default function NewExperimentPage() {
               <span className="text-muted-foreground">Total allocation</span>
               <span
                 className={`font-mono font-medium ${
-                  variants.reduce((sum, v) => sum + (parseInt(v.allocation) || 0), 0) ===
-                  100
-                    ? "text-emerald-600"
-                    : "text-destructive"
+                  allocationValid ? "text-emerald-600" : "text-destructive"
                 }`}
               >
-                {variants.reduce((sum, v) => sum + (parseInt(v.allocation) || 0), 0)}%
+                {Math.round(allocationTotal * 100) / 100}%
               </span>
             </div>
           </CardContent>
@@ -676,6 +712,22 @@ export default function NewExperimentPage() {
               <ReviewRow label="Significance Level" value={significanceLevel} />
               <ReviewRow label="Required Total" value={totalRequired.toLocaleString()} />
             </Section>
+
+            {selectedTemplate && selectedTemplate.checklist.length > 0 && (
+              <>
+                <Separator />
+                <Section title={`Pre-launch checklist · ${selectedTemplate.name}`}>
+                  <ul className="space-y-1.5">
+                    {selectedTemplate.checklist.map((item, i) => (
+                      <li key={i} className="flex gap-2 text-sm">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              </>
+            )}
           </CardContent>
         </Card>
       )}
